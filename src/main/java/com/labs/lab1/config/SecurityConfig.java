@@ -13,6 +13,8 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 
 @Configuration
 @EnableWebSecurity
@@ -27,13 +29,15 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // Отключаем CSRF для REST API (так как у нас нет сессий и кук в браузере, это стандартная практика)
-                // Если преподаватель требует включить CSRF, это сильно усложнит тестирование через Postman,
-                // обычно для REST JSON сервисов его отключают.
-                .csrf(AbstractHttpConfigurer::disable)
+
+                .csrf(csrf -> csrf
+                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                        .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
+                )
 
                 // Настройка доступов
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/").permitAll()
                         // Разрешаем всем доступ к регистрации
                         .requestMatchers("/api/auth/register").permitAll()
 
