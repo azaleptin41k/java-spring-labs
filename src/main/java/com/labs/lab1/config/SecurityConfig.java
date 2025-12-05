@@ -13,33 +13,39 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
-import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import com.labs.lab1.security.TokenFilter;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.context.annotation.Bean;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
+    private final TokenFilter tokenFilter;
 
-    public SecurityConfig(CustomUserDetailsService userDetailsService) {
+    public SecurityConfig(CustomUserDetailsService userDetailsService, TokenFilter tokenFilter) {
         this.userDetailsService = userDetailsService;
+        this.tokenFilter = tokenFilter;
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
 
-                .csrf(csrf -> csrf
-                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                        .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
-                )
+                .csrf(AbstractHttpConfigurer::disable)
 
                 // Настройка доступов
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/").permitAll()
-                        // Разрешаем всем доступ к регистрации
-                        .requestMatchers("/api/auth/register").permitAll()
+                        .requestMatchers("/api/auth/**").permitAll()
 
                         // GET запросы разрешены и USER, и ADMIN
                         .requestMatchers(HttpMethod.GET, "/api/**").hasAnyRole("USER", "ADMIN")
@@ -53,8 +59,11 @@ public class SecurityConfig {
                         // Все остальные запросы требуют аутентификации
                         .anyRequest().authenticated()
                 )
-                // Включаем Basic Auth (всплывающее окно или заголовки в Postman)
-                .httpBasic(Customizer.withDefaults());
+                // ОТКЛЮЧАЕМ СЕССИИ (мы stateless)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authenticationProvider(authenticationProvider())
+                // ДОБАВЛЯЕМ НАШ ФИЛЬТР перед стандартным
+                .addFilterBefore(tokenFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
