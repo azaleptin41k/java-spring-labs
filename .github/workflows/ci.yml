@@ -35,7 +35,7 @@ jobs:
       with:
         java-version: '17'
         distribution: 'temurin'
-        cache:maven: true
+        cache: 'maven'
 
     # Самый важный шаг: восстанавливаем keystore из секрета
     - name: Decode Keystore
