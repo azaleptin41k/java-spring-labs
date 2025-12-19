@@ -48,7 +48,7 @@ jobs:
       env:
         # Передаем переменные для тестов
         DB_PASSWORD: password # Пароль от сервиса postgres выше
-        #JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        JWT_SECRET: ${{ secrets.JWT_SECRET }}
         SSL_PASSWORD: ${{ secrets.SSL_PASSWORD }}
 
     # Сохранение JAR файла как артефакта
